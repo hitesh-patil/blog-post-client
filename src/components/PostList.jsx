@@ -4,6 +4,17 @@ import { GET_POSTS, UPDATE_POST, DELETE_POST } from '../graphql';
 import { useNavigate } from 'react-router-dom';
 import { getTagColorClass } from '../utils/tagColors';
 
+/**
+ * PostList Component
+ * 
+ * Renders a list of blog posts with infinite scrolling functionality.
+ * When an `authorId` is provided, it acts as a "Profile/Dashboard" view,
+ * displaying both published and draft posts along with management action buttons.
+ * Otherwise, it displays the public feed of published posts.
+ * 
+ * @param {Object} props - Component props
+ * @param {string} [props.authorId] - Optional ID to filter posts by author
+ */
 export default function PostList({ authorId }) {
   const navigate = useNavigate();
   const [hasMore, setHasMore] = useState(true);
@@ -126,6 +137,15 @@ export default function PostList({ authorId }) {
     setConfirmAction(null);
   };
 
+  /**
+   * Securely copies a post's URL to the user's clipboard.
+   * Uses modern navigator.clipboard for secure contexts (HTTPS/localhost),
+   * and falls back to a hidden textarea with document.execCommand('copy') 
+   * for non-secure environments like direct IP addresses.
+   * 
+   * @param {Event} e - Click event
+   * @param {Object} post - The post object being copied
+   */
   const handleCopyLink = (e, post) => {
     e.stopPropagation();
     const link = `${window.location.origin}/post/${post.id}`;
@@ -161,6 +181,12 @@ export default function PostList({ authorId }) {
     }
   };
 
+  /**
+   * ActionButton Component
+   * 
+   * A reusable button component used in the profile view to manage posts.
+   * Includes hover tooltip support and visual transitions.
+   */
   const ActionButton = ({ onClick, icon, tooltip, colorClass = "bg-surface-container-highest text-on-surface hover:bg-surface-variant" }) => (
     <div className="relative flex items-center justify-center group/btn">
       <button 
