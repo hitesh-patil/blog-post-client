@@ -71,11 +71,11 @@ export default function PostList({ authorId }) {
               if (fetchMoreResult.getPosts.length < 5) {
                 setHasMore(false);
               }
-              
+
               // Prevent duplicates (sometimes StrictMode double-fires)
               const existingIds = new Set(prev.getPosts.map(p => p.id));
               const newPosts = fetchMoreResult.getPosts.filter(p => !existingIds.has(p.id));
-              
+
               return Object.assign({}, prev, {
                 getPosts: [...prev.getPosts, ...newPosts]
               });
@@ -142,7 +142,7 @@ export default function PostList({ authorId }) {
 
   const handleConfirmAction = () => {
     if (!confirmAction) return;
-    
+
     if (confirmAction.type === 'UNPUBLISH' || confirmAction.type === 'PUBLISH') {
       updatePost({ variables: { id: confirmAction.post.id, status: confirmAction.newStatus } });
     } else if (confirmAction.type === 'DELETE') {
@@ -163,7 +163,7 @@ export default function PostList({ authorId }) {
   const handleCopyLink = (e, post) => {
     e.stopPropagation();
     const link = `${window.location.origin}/post/${post.id}`;
-    
+
     const showCopied = () => {
       setCopiedPostId(post.id);
       setTimeout(() => setCopiedPostId(null), 2000);
@@ -203,8 +203,8 @@ export default function PostList({ authorId }) {
    */
   const ActionButton = ({ onClick, icon, tooltip, colorClass = "bg-surface-container-highest text-on-surface hover:bg-surface-variant" }) => (
     <div className="relative flex items-center justify-center group/btn">
-      <button 
-        onClick={onClick} 
+      <button
+        onClick={onClick}
         className={`${colorClass} p-2.5 rounded-full shadow-sm transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary/50`}
       >
         <span className="material-symbols-outlined text-[18px]">{icon}</span>
@@ -224,9 +224,9 @@ export default function PostList({ authorId }) {
           <>
             <ActionButton onClick={() => navigate(`/edit/${post.id}`)} icon="edit" tooltip="Edit" />
             <ActionButton onClick={(e) => handleStatusChange(e, post, 'DRAFT')} icon="visibility_off" tooltip="Unpublish" />
-            <ActionButton 
-              onClick={(e) => handleCopyLink(e, post)} 
-              icon={copiedPostId === post.id ? "check" : "link"} 
+            <ActionButton
+              onClick={(e) => handleCopyLink(e, post)}
+              icon={copiedPostId === post.id ? "check" : "link"}
               tooltip={copiedPostId === post.id ? "Copied!" : "Copy Link"}
               colorClass={copiedPostId === post.id ? "bg-primary text-on-primary" : "bg-surface-container-highest text-on-surface hover:bg-surface-variant"}
             />
@@ -249,7 +249,7 @@ export default function PostList({ authorId }) {
     const dateStr = new Date(Number(post.createdAt)).toLocaleDateString('en-US', {
       year: 'numeric', month: 'short', day: 'numeric'
     });
-    const tags = post.tags && post.tags.length > 0 ? post.tags : ['GENERAL'];
+    const tags = post.tags && post.tags.length > 0 ? post.tags : [];
 
     if (patternIndex === 0) {
       // Large Card
@@ -328,9 +328,9 @@ export default function PostList({ authorId }) {
               </div>
               <code>
                 {post.title.substring(0, 30).toLowerCase().replace(/\s+/g, '_')} = {'{'}
-                <br/>&nbsp;&nbsp;id: "{post.id.substring(0, 5)}...",
-                <br/>&nbsp;&nbsp;tags: [{tags.length}]
-                <br/>{'}'}
+                <br />&nbsp;&nbsp;id: "{post.id.substring(0, 5)}...",
+                <br />&nbsp;&nbsp;tags: [{tags.length}]
+                <br />{'}'}
               </code>
             </div>
           )}
@@ -364,7 +364,7 @@ export default function PostList({ authorId }) {
             <h1 className="font-headline-xl text-headline-xl mb-stack-sm text-on-background">Stories & Ideas</h1>
             <p className="text-body-lg text-on-surface-variant">A collection of thoughts, updates, and deep dives on topics from all around.</p>
           </div>
-          <button 
+          <button
             onClick={() => navigate('/add')}
             className="bg-primary text-on-primary font-body-md px-6 py-3 rounded-lg flex items-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20"
           >
@@ -379,7 +379,7 @@ export default function PostList({ authorId }) {
           <span className="material-symbols-outlined text-[48px] text-outline mb-4">article</span>
           <h2 className="font-headline-sm text-headline-sm text-on-surface mb-2">No posts available</h2>
           <p className="text-on-surface-variant font-body-md mb-6">Be the first to write something amazing!</p>
-          <button 
+          <button
             onClick={() => navigate('/add')}
             className="text-primary hover:underline font-label-caps"
           >
@@ -401,7 +401,7 @@ export default function PostList({ authorId }) {
           </div>
         </div>
       )}
-      
+
       {!hasMore && posts.length > 0 && (
         <div className="flex justify-center py-12 w-full col-span-12">
           <div className="flex flex-col items-center text-outline">
@@ -425,24 +425,23 @@ export default function PostList({ authorId }) {
                 {confirmAction.type === 'DELETE' ? 'Delete Post?' : (confirmAction.type === 'PUBLISH' ? 'Publish Post?' : 'Unpublish Post?')}
               </h3>
               <p className="text-body-md font-body-md text-on-surface-variant mb-8 px-2">
-                {confirmAction.type === 'DELETE' 
+                {confirmAction.type === 'DELETE'
                   ? 'Are you sure you want to permanently delete this post? This action cannot be undone.'
                   : (confirmAction.type === 'PUBLISH' ? 'Are you sure you want to publish this post? It will become visible to everyone.' : 'Are you sure you want to unpublish this post? It will be moved to drafts and hidden from public view.')}
               </p>
               <div className="flex justify-center gap-4 w-full">
-                <button 
+                <button
                   onClick={() => setConfirmAction(null)}
                   className="flex-1 py-3 px-4 font-label-large text-on-surface rounded-xl border border-outline-variant hover:bg-surface-variant transition-colors"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleConfirmAction}
-                  className={`flex-1 py-3 px-4 font-label-large rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 ${
-                    confirmAction.type === 'DELETE' 
-                      ? 'bg-error text-on-error hover:opacity-90 shadow-error/20' 
-                      : 'bg-primary text-on-primary hover:opacity-90 shadow-primary/20'
-                  }`}
+                  className={`flex-1 py-3 px-4 font-label-large rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 ${confirmAction.type === 'DELETE'
+                    ? 'bg-error text-on-error hover:opacity-90 shadow-error/20'
+                    : 'bg-primary text-on-primary hover:opacity-90 shadow-primary/20'
+                    }`}
                 >
                   {confirmAction.type === 'DELETE' ? 'Delete' : (confirmAction.type === 'PUBLISH' ? 'Publish' : 'Unpublish')}
                 </button>

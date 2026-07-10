@@ -28,6 +28,16 @@ export const GET_USER = gql`
   }
 `;
 
+export const GET_ME = gql`
+  query GetMe {
+    me {
+      id
+      name
+      username
+    }
+  }
+`;
+
 export const GET_POST = gql`
   query GetPost($id: ID!) {
     getPost(id: $id) {
@@ -103,5 +113,11 @@ export const LOGIN_USER = gql`
       token
       userId
     }
+  }
+`;
+
+export const LOGOUT_USER = gql`
+  mutation Logout {
+    logout
   }
 `;

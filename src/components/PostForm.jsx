@@ -85,9 +85,10 @@ export default function PostForm() {
   const { showToast } = useToast();
   const [isPreview, setIsPreview] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [tags, setTags] = useState(['Architect']);
+  const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
   const [editorInstance, setEditorInstance] = useState(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -183,8 +184,22 @@ export default function PostForm() {
   };
 
   const [addPost, { loading: addingPost, error }] = useMutation(ADD_POST, {
-    refetchQueries: [{ query: GET_POSTS, variables: { limit: 5, offset: 0 } }],
-    awaitRefetchQueries: true,
+    update(cache, { data: { addPost } }) {
+      try {
+        const existingData = cache.readQuery({ query: GET_POSTS, variables: { limit: 5, offset: 0 } });
+        if (existingData && existingData.getPosts) {
+          cache.writeQuery({
+            query: GET_POSTS,
+            variables: { limit: 5, offset: 0 },
+            data: {
+              getPosts: [addPost, ...existingData.getPosts]
+            }
+          });
+        }
+      } catch (e) {
+        // Query might not be in cache yet
+      }
+    },
     onCompleted: (data) => {
       const status = data.addPost.status;
       if (status === 'PUBLISHED') showToast('Post published successfully');
@@ -194,7 +209,6 @@ export default function PostForm() {
   });
 
   const [updatePost, { loading: updatingPost }] = useMutation(UPDATE_POST, {
-    refetchQueries: [{ query: GET_POSTS, variables: { limit: 5, offset: 0 } }],
     onCompleted: (data) => {
       const status = data.updatePost.status;
       if (status === 'PUBLISHED') showToast('Post published successfully');
@@ -225,8 +239,15 @@ export default function PostForm() {
 
 
   const handleSubmit = (e, newStatus = 'PUBLISHED') => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!title.trim() || !description.trim()) return;
+
+    if (newStatus === 'PUBLISHED' && !showPublishConfirm) {
+      setShowPublishConfirm(true);
+      return;
+    }
+    
+    setShowPublishConfirm(false);
 
     if (id) {
       updatePost({ variables: { id, title, description, tags, coverImage, status: newStatus } });
@@ -607,16 +628,54 @@ export default function PostForm() {
               
               <div className="flex gap-3 w-full">
                 <button 
+                  type="button"
                   className="flex-1 py-3 px-4 rounded-xl border border-outline font-semibold text-on-surface hover:bg-surface-variant transition-colors"
                   onClick={() => setShowCancelConfirm(false)}
                 >
                   Keep Editing
                 </button>
                 <button 
+                  type="button"
                   className="flex-1 py-3 px-4 rounded-xl bg-error text-on-error font-semibold hover:opacity-90 hover:-translate-y-0.5 transition-all shadow-md"
                   onClick={() => navigate('/')}
                 >
                   Discard
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Custom Confirmation Popup for Publish */}
+        {showPublishConfirm && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-on-background/20 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowPublishConfirm(false)}>
+            <div 
+              className="bg-surface border border-outline-variant rounded-[28px] p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="w-16 h-16 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center mb-6 shadow-sm">
+                <span className="material-symbols-outlined text-[32px]">publish</span>
+              </div>
+              <h3 className="text-headline-sm font-headline-sm text-on-surface mb-4">Publish Post?</h3>
+              <p className="text-body-md font-body-md text-on-surface-variant mb-8 px-2">
+                Are you sure you want to publish this post? It will become visible to everyone.
+              </p>
+              
+              <div className="flex justify-center gap-4 w-full">
+                <button 
+                  type="button"
+                  onClick={() => setShowPublishConfirm(false)}
+                  className="flex-1 py-3 px-4 font-label-large text-on-surface rounded-xl border border-outline-variant hover:bg-surface-variant transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button"
+                  onClick={(e) => handleSubmit(e, 'PUBLISHED')}
+                  className="flex-1 py-3 px-4 font-label-large rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 bg-primary text-on-primary hover:opacity-90 shadow-primary/20"
+                >
+                  Publish
                 </button>
               </div>
             </div>
