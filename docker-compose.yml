@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  client:
+    build:
+      context: .
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:4000/graphql}
+        - VITE_CLOUDINARY_CLOUD_NAME=${VITE_CLOUDINARY_CLOUD_NAME}
+        - VITE_CLOUDINARY_UPLOAD_PRESET=${VITE_CLOUDINARY_UPLOAD_PRESET}
+    container_name: blog-posts-client
+    ports:
+      - "8080:80"

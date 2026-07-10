@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+}
+
+body {
+    background-color: #ffffff;
+    color: #0b1c30;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar for technical feel */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f8f9ff;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #dce9ff;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #cbdbf5;
+}
+
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+}
+
+.glass-card {
+    background: #ffffff;
+    border: 1px solid #c2c6d6;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+}
+
+.glass-card-interactive:hover {
+    border-color: #0058be;
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* CKEditor Overrides for Tailwind */
+.ck-editor__editable_inline {
+    min-height: 300px;
+}
+
+.ck-content ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+}
+
+.ck-content ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+}
+
+.ck-content li::marker {
+    color: inherit !important;
+}
+
+.ck-content li {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-inline-start: 0 !important;
+}
+
+.ck-content h1,
+.ck-content h2,
+.ck-content h3,
+.ck-content h4,
+.ck-content h5,
+.ck-content h6 {
+    font-size: revert;
+    font-weight: revert;
+}
+
+.ck.ck-editor__editable_inline {
+    padding-top: var(--ck-spacing-standard);
+}
+
+/* Force Native Sticky Toolbar for CKEditor */
+.ck.ck-sticky-panel__content {
+    position: sticky !important;
+    top: 64px !important;
+    z-index: 40 !important;
+}
+
+/* Hide CKEditor Powered By Logo */
+.ck.ck-powered-by {
+    display: none !important;
+}
