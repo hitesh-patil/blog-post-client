@@ -18,6 +18,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/blog-client
-            git pull origin production
-            npm install
+            git fetch origin production
+            git reset --hard origin/production
+            npm ci
             npm run build
