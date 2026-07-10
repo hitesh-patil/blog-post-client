@@ -9,6 +9,7 @@ export default function PostList({ authorId }) {
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef(null);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [copiedPostId, setCopiedPostId] = useState(null);
 
   const [updatePost] = useMutation(UPDATE_POST);
   const [deletePost] = useMutation(DELETE_POST, {
@@ -129,9 +130,14 @@ export default function PostList({ authorId }) {
     e.stopPropagation();
     const link = `${window.location.origin}/post/${post.id}`;
     
+    const showCopied = () => {
+      setCopiedPostId(post.id);
+      setTimeout(() => setCopiedPostId(null), 2000);
+    };
+
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(link).then(() => {
-        alert('Link copied to clipboard!');
+        showCopied();
       }).catch(err => {
         console.error('Failed to copy link: ', err);
       });
@@ -146,7 +152,7 @@ export default function PostList({ authorId }) {
       textArea.select();
       try {
         document.execCommand('copy');
-        alert('Link copied to clipboard!');
+        showCopied();
       } catch (error) {
         console.error('Fallback copy failed', error);
       } finally {
@@ -178,7 +184,12 @@ export default function PostList({ authorId }) {
           <>
             <ActionButton onClick={() => navigate(`/edit/${post.id}`)} icon="edit" tooltip="Edit" />
             <ActionButton onClick={(e) => handleStatusChange(e, post, 'DRAFT')} icon="visibility_off" tooltip="Unpublish" />
-            <ActionButton onClick={(e) => handleCopyLink(e, post)} icon="link" tooltip="Copy Link" />
+            <ActionButton 
+              onClick={(e) => handleCopyLink(e, post)} 
+              icon={copiedPostId === post.id ? "check" : "link"} 
+              tooltip={copiedPostId === post.id ? "Copied!" : "Copy Link"}
+              colorClass={copiedPostId === post.id ? "bg-primary text-on-primary" : "bg-surface-container-highest text-on-surface hover:bg-surface-variant"}
+            />
             <ActionButton onClick={(e) => handleDelete(e, post)} icon="delete" tooltip="Delete" colorClass="bg-error-container/50 text-error hover:bg-error-container" />
           </>
         ) : (
