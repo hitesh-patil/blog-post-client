@@ -14,9 +14,8 @@ export default function AuthForm({ setToken }) {
 
   const [login, { loading: loginLoading }] = useMutation(LOGIN_USER, {
     onCompleted: (data) => {
-      const token = data.login.token;
-      localStorage.setItem('token', token);
-      setToken(token);
+      localStorage.setItem('isAuthenticated', 'true');
+      setToken('true');
 
       const intendedView = localStorage.getItem('redirectToAfterLogin');
       if (intendedView) {
@@ -33,9 +32,8 @@ export default function AuthForm({ setToken }) {
 
   const [signup, { loading: signupLoading }] = useMutation(SIGNUP_USER, {
     onCompleted: (data) => {
-      const token = data.signup.token;
-      localStorage.setItem('token', token);
-      setToken(token);
+      localStorage.setItem('isAuthenticated', 'true');
+      setToken('true');
 
       const intendedView = localStorage.getItem('redirectToAfterLogin');
       if (intendedView) {

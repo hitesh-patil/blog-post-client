@@ -4,25 +4,35 @@ import App from './App.jsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import { ToastProvider } from './components/Toast'
-import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
+import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
+import { onError } from '@apollo/client/link/error'
 import { ApolloProvider } from '@apollo/client/react'
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/graphql';
-const httpLink = new HttpLink({ uri: apiUrl });
+const httpLink = new HttpLink({ 
+  uri: apiUrl,
+  credentials: 'include' 
+});
 
-const authLink = setContext((_, { headers }) => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: {
-      ...headers,
-      authorization: token ? `Bearer ${token}` : "",
+const errorLink = onError(({ graphQLErrors }) => {
+  if (graphQLErrors) {
+    for (let err of graphQLErrors) {
+      if (err.extensions?.code === 'UNAUTHENTICATED') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('isAuthenticated');
+        // Force reload to redirect to login if protected route
+        window.location.href = '/login';
+      }
     }
   }
 });
 
 const client = new ApolloClient({
-  link: authLink.concat(httpLink),
+  enhancedClientAwareness: {
+    transport: false
+  },
+  link: from([errorLink, httpLink]),
   cache: new InMemoryCache(),
 })
 

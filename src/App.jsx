@@ -9,10 +9,10 @@ import Profile from './components/Profile';
 
 // A wrapper for protected routes
 function ProtectedRoute({ children }) {
-  const token = localStorage.getItem('token');
+  const isAuthenticated = localStorage.getItem('isAuthenticated');
   const location = useLocation();
 
-  if (!token) {
+  if (!isAuthenticated) {
     // Save the intended route so they can redirect back after login
     localStorage.setItem('redirectToAfterLogin', location.pathname);
     return <Navigate to="/login" replace />;
@@ -22,7 +22,7 @@ function ProtectedRoute({ children }) {
 }
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(localStorage.getItem('isAuthenticated'));
 
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
