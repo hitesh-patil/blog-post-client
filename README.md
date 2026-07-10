@@ -5,6 +5,25 @@ The frontend application for the full-stack blog platform.
 ## Overview
 This is a modern React application bootstrapped with Vite, featuring a sleek, responsive design and a fully-featured rich text editor for creating blog posts.
 
+## Live Demo
+Check out the live production environment here: **[http://13.60.170.186](http://13.60.170.186)**
+
+## Screenshots
+
+<details>
+<summary>Click to view Production Screenshots</summary>
+
+### Home Page (Feed)
+![Home Page](./public/screenshots/home.png)
+
+### Add Post (Rich Text Editor)
+![Add Post](./public/screenshots/add-post.png)
+
+### User Profile (My Posts & Drafts)
+![User Profile](./public/screenshots/profile.png)
+
+</details>
+
 ## Approach
 The frontend architecture emphasizes a premium user experience and efficient state management. We used **React** with **Vite** for fast HMR and optimized builds. **Apollo Client** was chosen to manage both local UI state and remote GraphQL data seamlessly, significantly reducing network payload by requesting only the needed fields. For content creation, we integrated **CKEditor 5** paired with a direct **Cloudinary** upload mechanism, allowing for rich media integration without burdening the backend servers. Styling was done using **Vanilla CSS**, relying on modern CSS variables, glassmorphism principles, and micro-animations to achieve a high-end feel without the bloat of heavy CSS frameworks.
 
