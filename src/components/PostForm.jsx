@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import {
@@ -81,6 +82,7 @@ export default function PostForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [isPreview, setIsPreview] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState(['Architect']);
@@ -373,7 +375,7 @@ export default function PostForm() {
                             const url = match[0];
                             return (
                               '<div style="position: relative; padding-bottom: 56.25%; height: 0;">' +
-                                `<video controls src="${url}" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;"></video>` +
+                              `<video controls src="${url}" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;"></video>` +
                               '</div>'
                             );
                           }
@@ -446,7 +448,14 @@ export default function PostForm() {
                           document.getElementById('video-upload').click();
                         };
 
-                        itemsContainer.appendChild(videoBtn);
+                        // Insert the custom video button right before the 'undo' button
+                        // The 'undo' button is the second to last item in the toolbar array
+                        const undoIndex = itemsContainer.children.length - 2;
+                        if (undoIndex >= 0) {
+                          itemsContainer.insertBefore(videoBtn, itemsContainer.children[undoIndex]);
+                        } else {
+                          itemsContainer.appendChild(videoBtn);
+                        }
                       }
                     }
                   }}
@@ -519,16 +528,16 @@ export default function PostForm() {
           </div>
         )}
 
-        <div className="pt-stack-sm flex flex-col md:flex-row-reverse gap-4">
+        <div className="sticky bottom-0 z-50 py-3 mt-4 bg-background/90 backdrop-blur-md border-t border-outline-variant/30 flex flex-col md:flex-row-reverse gap-3 -mx-4 px-4 sm:mx-0 sm:px-0">
           <button
-            className={`md:w-40 bg-primary text-on-primary font-bold px-6 py-3 rounded-lg hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/10 flex justify-center items-center gap-2 ${loading || !title.trim() || !description.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`md:min-w-[120px] bg-primary text-on-primary font-semibold text-sm px-4 py-2 rounded-lg hover:opacity-90 active:scale-95 transition-all shadow-sm shadow-primary/20 flex justify-center items-center gap-2 ${loading || !title.trim() || !description.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
             type="button"
             onClick={(e) => handleSubmit(e, 'PUBLISHED')}
             disabled={loading || !title.trim() || !description.trim()}
           >
             {loading ? (
               <>
-                <span className="material-symbols-outlined animate-spin text-[20px]">sync</span>
+                <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
                 Saving...
               </>
             ) : (
@@ -536,7 +545,7 @@ export default function PostForm() {
             )}
           </button>
           <button
-            className={`md:w-40 bg-surface-container-high text-on-surface font-bold px-6 py-3 rounded-lg hover:bg-surface-variant active:scale-95 transition-all shadow-sm flex justify-center items-center gap-2 ${loading || !title.trim() || !description.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`md:min-w-[120px] bg-surface-container-high text-on-surface font-semibold text-sm px-4 py-2 rounded-lg hover:bg-surface-variant active:scale-95 transition-all flex justify-center items-center gap-2 ${loading || !title.trim() || !description.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
             type="button"
             onClick={(e) => handleSubmit(e, 'DRAFT')}
             disabled={loading || !title.trim() || !description.trim()}
@@ -545,26 +554,67 @@ export default function PostForm() {
           </button>
 
           <button
-            className={`md:w-40 bg-surface-variant text-on-surface-variant px-4 py-3 rounded-lg hover:bg-outline-variant transition-colors font-medium flex justify-center items-center gap-2 ${!isPreview && (!title.trim() || !description.trim()) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`md:min-w-[120px] bg-surface-variant text-on-surface-variant px-4 py-2 rounded-lg hover:bg-outline-variant transition-colors font-semibold text-sm flex justify-center items-center gap-2 ${!isPreview && (!title.trim() || !description.trim()) ? 'opacity-50 cursor-not-allowed' : ''}`}
             type="button"
             onClick={() => setIsPreview(!isPreview)}
             disabled={loading || (!isPreview && (!title.trim() || !description.trim()))}
           >
-            <span className="material-symbols-outlined text-[20px]">{isPreview ? 'edit' : 'visibility'}</span>
+            <span className="material-symbols-outlined text-[18px]">{isPreview ? 'edit' : 'visibility'}</span>
             <span className="whitespace-nowrap">{isPreview ? 'Back to Edit' : 'Preview'}</span>
           </button>
 
           {!isPreview && (
             <button
-              className="md:w-40 border border-outline text-on-surface px-6 py-3 rounded-lg hover:bg-surface-variant transition-colors font-medium whitespace-nowrap"
+              className="md:min-w-[120px] border border-outline text-on-surface px-4 py-2 rounded-lg hover:bg-surface-variant transition-colors font-semibold text-sm whitespace-nowrap"
               type="button"
-              onClick={() => navigate('/')}
+              onClick={() => {
+                const hasUnsavedChanges = title.trim() !== '' || description.trim() !== '' || coverImage !== '';
+                if (hasUnsavedChanges && !loading) {
+                  setShowCancelConfirm(true);
+                } else {
+                  navigate('/');
+                }
+              }}
               disabled={loading}
             >
               Cancel
             </button>
           )}
         </div>
+
+        {/* Custom Confirmation Popup for Cancel */}
+        {showCancelConfirm && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-on-background/20 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCancelConfirm(false)}>
+            <div 
+              className="bg-surface border border-outline-variant rounded-[28px] p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="w-14 h-14 rounded-full bg-error-container text-on-error-container flex items-center justify-center mb-6">
+                <span className="material-symbols-outlined text-3xl">warning</span>
+              </div>
+              <h3 className="text-headline-sm font-bold text-on-surface mb-3">Discard changes?</h3>
+              <p className="text-body-md text-on-surface-variant mb-8">
+                You have unsaved changes. Are you sure you want to discard them? This action cannot be undone.
+              </p>
+              
+              <div className="flex gap-3 w-full">
+                <button 
+                  className="flex-1 py-3 px-4 rounded-xl border border-outline font-semibold text-on-surface hover:bg-surface-variant transition-colors"
+                  onClick={() => setShowCancelConfirm(false)}
+                >
+                  Keep Editing
+                </button>
+                <button 
+                  className="flex-1 py-3 px-4 rounded-xl bg-error text-on-error font-semibold hover:opacity-90 hover:-translate-y-0.5 transition-all shadow-md"
+                  onClick={() => navigate('/')}
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </form>
     </div>
   );
