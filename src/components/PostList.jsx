@@ -127,8 +127,32 @@ export default function PostList({ authorId }) {
 
   const handleCopyLink = (e, post) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-    alert('Link copied to clipboard!');
+    const link = `${window.location.origin}/post/${post.id}`;
+    
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(link).then(() => {
+        alert('Link copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy link: ', err);
+      });
+    } else {
+      // Fallback for non-HTTPS environments (like HTTP IP addresses)
+      const textArea = document.createElement("textarea");
+      textArea.value = link;
+      // Move textarea out of viewport
+      textArea.style.position = "absolute";
+      textArea.style.left = "-999999px";
+      document.body.prepend(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        alert('Link copied to clipboard!');
+      } catch (error) {
+        console.error('Fallback copy failed', error);
+      } finally {
+        textArea.remove();
+      }
+    }
   };
 
   const ActionButton = ({ onClick, icon, tooltip, colorClass = "bg-surface-container-highest text-on-surface hover:bg-surface-variant" }) => (
