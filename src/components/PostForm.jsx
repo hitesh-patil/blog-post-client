@@ -28,6 +28,7 @@ import 'ckeditor5/ckeditor5.css';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { ADD_POST, UPDATE_POST, GET_POSTS, GET_POST } from '../graphql';
 import { getTagColorClass } from '../utils/tagColors';
+import { useToast } from './Toast';
 
 class CloudinaryUploadAdapter {
   constructor(loader) {
@@ -81,6 +82,7 @@ function CloudinaryUploadAdapterPlugin(editor) {
 export default function PostForm() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { showToast } = useToast();
   const [isPreview, setIsPreview] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [title, setTitle] = useState('');
@@ -183,14 +185,20 @@ export default function PostForm() {
   const [addPost, { loading: addingPost, error }] = useMutation(ADD_POST, {
     refetchQueries: [{ query: GET_POSTS, variables: { limit: 5, offset: 0 } }],
     awaitRefetchQueries: true,
-    onCompleted: () => {
+    onCompleted: (data) => {
+      const status = data.addPost.status;
+      if (status === 'PUBLISHED') showToast('Post published successfully');
+      else showToast('Draft saved successfully');
       navigate('/profile');
     }
   });
 
   const [updatePost, { loading: updatingPost }] = useMutation(UPDATE_POST, {
     refetchQueries: [{ query: GET_POSTS, variables: { limit: 5, offset: 0 } }],
-    onCompleted: () => {
+    onCompleted: (data) => {
+      const status = data.updatePost.status;
+      if (status === 'PUBLISHED') showToast('Post published successfully');
+      else showToast('Draft saved successfully');
       navigate('/profile');
     }
   });

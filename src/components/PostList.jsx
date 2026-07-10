@@ -1,18 +1,39 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { GET_POSTS, UPDATE_POST, DELETE_POST } from '../graphql';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getTagColorClass } from '../utils/tagColors';
+import { useToast } from './Toast';
 
+/**
+ * PostList Component
+ * 
+ * Renders a list of blog posts with infinite scrolling functionality.
+ * When an `authorId` is provided, it acts as a "Profile/Dashboard" view,
+ * displaying both published and draft posts along with management action buttons.
+ * Otherwise, it displays the public feed of published posts.
+ * 
+ * @param {Object} props - Component props
+ * @param {string} [props.authorId] - Optional ID to filter posts by author
+ */
 export default function PostList({ authorId }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { showToast } = useToast();
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [copiedPostId, setCopiedPostId] = useState(null);
 
-  const [updatePost] = useMutation(UPDATE_POST);
+  const [updatePost] = useMutation(UPDATE_POST, {
+    onCompleted: (data) => {
+      const status = data.updatePost.status;
+      if (status === 'PUBLISHED') showToast('Post published successfully');
+      else showToast('Post unpublished successfully');
+    }
+  });
   const [deletePost] = useMutation(DELETE_POST, {
+    onCompleted: () => showToast('Post deleted successfully'),
     update(cache, { data: { deletePost } }) {
       cache.modify({
         fields: {
@@ -107,6 +128,10 @@ export default function PostList({ authorId }) {
       setConfirmAction({ type: 'UNPUBLISH', post, newStatus });
       return;
     }
+    if (newStatus === 'PUBLISHED') {
+      setConfirmAction({ type: 'PUBLISH', post, newStatus });
+      return;
+    }
     updatePost({ variables: { id: post.id, status: newStatus } });
   };
 
@@ -118,7 +143,7 @@ export default function PostList({ authorId }) {
   const handleConfirmAction = () => {
     if (!confirmAction) return;
     
-    if (confirmAction.type === 'UNPUBLISH') {
+    if (confirmAction.type === 'UNPUBLISH' || confirmAction.type === 'PUBLISH') {
       updatePost({ variables: { id: confirmAction.post.id, status: confirmAction.newStatus } });
     } else if (confirmAction.type === 'DELETE') {
       deletePost({ variables: { id: confirmAction.post.id } });
@@ -126,6 +151,15 @@ export default function PostList({ authorId }) {
     setConfirmAction(null);
   };
 
+  /**
+   * Securely copies a post's URL to the user's clipboard.
+   * Uses modern navigator.clipboard for secure contexts (HTTPS/localhost),
+   * and falls back to a hidden textarea with document.execCommand('copy') 
+   * for non-secure environments like direct IP addresses.
+   * 
+   * @param {Event} e - Click event
+   * @param {Object} post - The post object being copied
+   */
   const handleCopyLink = (e, post) => {
     e.stopPropagation();
     const link = `${window.location.origin}/post/${post.id}`;
@@ -161,6 +195,12 @@ export default function PostList({ authorId }) {
     }
   };
 
+  /**
+   * ActionButton Component
+   * 
+   * A reusable button component used in the profile view to manage posts.
+   * Includes hover tooltip support and visual transitions.
+   */
   const ActionButton = ({ onClick, icon, tooltip, colorClass = "bg-surface-container-highest text-on-surface hover:bg-surface-variant" }) => (
     <div className="relative flex items-center justify-center group/btn">
       <button 
@@ -196,7 +236,7 @@ export default function PostList({ authorId }) {
           <>
             <span className="bg-surface-variant text-on-surface-variant font-label-caps text-xs px-3 py-1 rounded-full flex items-center shadow-sm mr-auto">DRAFT</span>
             <ActionButton onClick={() => navigate(`/edit/${post.id}`)} icon="edit" tooltip="Edit" />
-            <ActionButton onClick={(e) => { e.stopPropagation(); navigate(`/post/${post.id}`); }} icon="visibility" tooltip="Preview" />
+            <ActionButton onClick={(e) => { e.stopPropagation(); navigate(`/post/${post.id}`, { state: { from: location.pathname } }); }} icon="visibility" tooltip="Preview" />
             <ActionButton onClick={(e) => handleStatusChange(e, post, 'PUBLISHED')} icon="publish" tooltip="Publish" colorClass="bg-primary-container/50 text-primary hover:bg-primary-container" />
           </>
         )}
@@ -214,7 +254,7 @@ export default function PostList({ authorId }) {
     if (patternIndex === 0) {
       // Large Card
       return (
-        <article key={post.id} onClick={() => navigate(`/post/${post.id}`)} className="col-span-12 md:col-span-8 glass-card glass-card-interactive rounded-xl overflow-hidden group flex flex-col md:flex-row cursor-pointer relative">
+        <article key={post.id} onClick={() => navigate(`/post/${post.id}`, { state: { from: location.pathname } })} className="col-span-12 md:col-span-8 glass-card glass-card-interactive rounded-xl overflow-hidden group flex flex-col md:flex-row cursor-pointer relative">
           {renderActionMenu(post)}
           {post.coverImage && (
             <div className="md:w-1/2 h-64 md:h-auto overflow-hidden">
@@ -243,7 +283,7 @@ export default function PostList({ authorId }) {
     } else if (patternIndex === 1 || patternIndex === 2) {
       // Small Card
       return (
-        <article key={post.id} onClick={() => navigate(`/post/${post.id}`)} className="col-span-12 md:col-span-4 glass-card glass-card-interactive rounded-xl overflow-hidden flex flex-col group cursor-pointer relative">
+        <article key={post.id} onClick={() => navigate(`/post/${post.id}`, { state: { from: location.pathname } })} className="col-span-12 md:col-span-4 glass-card glass-card-interactive rounded-xl overflow-hidden flex flex-col group cursor-pointer relative">
           {renderActionMenu(post)}
           {post.coverImage && (
             <div className="w-full h-48 overflow-hidden shrink-0">
@@ -274,7 +314,7 @@ export default function PostList({ authorId }) {
     } else {
       // Medium Card
       return (
-        <article key={post.id} onClick={() => navigate(`/post/${post.id}`)} className="col-span-12 md:col-span-8 glass-card glass-card-interactive rounded-xl p-gutter flex flex-col md:flex-row gap-6 group cursor-pointer relative">
+        <article key={post.id} onClick={() => navigate(`/post/${post.id}`, { state: { from: location.pathname } })} className="col-span-12 md:col-span-8 glass-card glass-card-interactive rounded-xl p-gutter flex flex-col md:flex-row gap-6 group cursor-pointer relative">
           {renderActionMenu(post)}
           {post.coverImage ? (
             <div className="md:w-1/3 h-48 md:h-auto rounded overflow-hidden shrink-0">
@@ -378,16 +418,16 @@ export default function PostList({ authorId }) {
             <div className="p-8 flex flex-col items-center text-center">
               <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 shadow-sm ${confirmAction.type === 'DELETE' ? 'bg-error-container text-on-error-container' : 'bg-primary-container text-on-primary-container'}`}>
                 <span className="material-symbols-outlined text-[32px]">
-                  {confirmAction.type === 'DELETE' ? 'delete_forever' : 'visibility_off'}
+                  {confirmAction.type === 'DELETE' ? 'delete_forever' : (confirmAction.type === 'PUBLISH' ? 'publish' : 'visibility_off')}
                 </span>
               </div>
               <h3 className="text-headline-sm font-headline-sm text-on-surface mb-4">
-                {confirmAction.type === 'DELETE' ? 'Delete Post?' : 'Unpublish Post?'}
+                {confirmAction.type === 'DELETE' ? 'Delete Post?' : (confirmAction.type === 'PUBLISH' ? 'Publish Post?' : 'Unpublish Post?')}
               </h3>
               <p className="text-body-md font-body-md text-on-surface-variant mb-8 px-2">
                 {confirmAction.type === 'DELETE' 
                   ? 'Are you sure you want to permanently delete this post? This action cannot be undone.'
-                  : 'Are you sure you want to unpublish this post? It will be moved to drafts and hidden from public view.'}
+                  : (confirmAction.type === 'PUBLISH' ? 'Are you sure you want to publish this post? It will become visible to everyone.' : 'Are you sure you want to unpublish this post? It will be moved to drafts and hidden from public view.')}
               </p>
               <div className="flex justify-center gap-4 w-full">
                 <button 
@@ -404,7 +444,7 @@ export default function PostList({ authorId }) {
                       : 'bg-primary text-on-primary hover:opacity-90 shadow-primary/20'
                   }`}
                 >
-                  {confirmAction.type === 'DELETE' ? 'Delete' : 'Unpublish'}
+                  {confirmAction.type === 'DELETE' ? 'Delete' : (confirmAction.type === 'PUBLISH' ? 'Publish' : 'Unpublish')}
                 </button>
               </div>
             </div>
