@@ -1,11 +1,13 @@
 import { useQuery } from '@apollo/client/react';
 import { GET_POST } from '../graphql';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { getTagColorClass } from '../utils/tagColors';
 
 export default function PostDetail() {
   const { id: postId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backUrl = location.state?.from || '/';
 
   const { loading, error, data } = useQuery(GET_POST, {
     variables: { id: postId }
@@ -59,7 +61,7 @@ export default function PostDetail() {
   return (
     <article className="max-w-3xl mx-auto animate-in fade-in duration-300">
       <Link
-        to="/"
+        to={backUrl}
         className="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors mb-8 font-label-caps inline-flex"
       >
         <span className="material-symbols-outlined">arrow_back</span>
