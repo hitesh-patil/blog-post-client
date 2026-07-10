@@ -8,6 +8,7 @@ export default function PostList({ authorId }) {
   const navigate = useNavigate();
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const [updatePost] = useMutation(UPDATE_POST);
   const [deletePost] = useMutation(DELETE_POST, {
@@ -101,14 +102,27 @@ export default function PostList({ authorId }) {
 
   const handleStatusChange = (e, post, newStatus) => {
     e.stopPropagation();
+    if (newStatus === 'DRAFT') {
+      setConfirmAction({ type: 'UNPUBLISH', post, newStatus });
+      return;
+    }
     updatePost({ variables: { id: post.id, status: newStatus } });
   };
 
   const handleDelete = (e, post) => {
     e.stopPropagation();
-    if(window.confirm('Are you sure you want to delete this post?')) {
-      deletePost({ variables: { id: post.id } });
+    setConfirmAction({ type: 'DELETE', post });
+  };
+
+  const handleConfirmAction = () => {
+    if (!confirmAction) return;
+    
+    if (confirmAction.type === 'UNPUBLISH') {
+      updatePost({ variables: { id: confirmAction.post.id, status: confirmAction.newStatus } });
+    } else if (confirmAction.type === 'DELETE') {
+      deletePost({ variables: { id: confirmAction.post.id } });
     }
+    setConfirmAction(null);
   };
 
   const handleCopyLink = (e, post) => {
@@ -117,37 +131,38 @@ export default function PostList({ authorId }) {
     alert('Link copied to clipboard!');
   };
 
+  const ActionButton = ({ onClick, icon, tooltip, colorClass = "bg-surface-container-highest text-on-surface hover:bg-surface-variant" }) => (
+    <div className="relative flex items-center justify-center group/btn">
+      <button 
+        onClick={onClick} 
+        className={`${colorClass} p-2.5 rounded-full shadow-sm transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary/50`}
+      >
+        <span className="material-symbols-outlined text-[18px]">{icon}</span>
+      </button>
+      <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-on-surface text-surface text-[11px] font-label-caps rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-md z-20">
+        {tooltip}
+        <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-on-surface"></div>
+      </div>
+    </div>
+  );
+
   const renderActionMenu = (post) => {
     if (!authorId) return null; // Only show menu in Profile view
     return (
-      <div className="absolute top-4 right-4 z-10 flex gap-2" onClick={e => e.stopPropagation()}>
+      <div className="absolute top-0 right-0 left-0 p-4 z-10 flex justify-end gap-2 bg-surface/95 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-t-xl border-b border-outline-variant/30 translate-y-[-10px] group-hover:translate-y-0" onClick={e => e.stopPropagation()}>
         {post.status === 'PUBLISHED' ? (
           <>
-            <button onClick={() => navigate(`/edit/${post.id}`)} className="bg-surface/80 backdrop-blur text-on-surface hover:bg-surface p-2 rounded-full shadow transition-colors flex items-center justify-center" title="Edit">
-              <span className="material-symbols-outlined text-[18px]">edit</span>
-            </button>
-            <button onClick={(e) => handleStatusChange(e, post, 'DRAFT')} className="bg-surface/80 backdrop-blur text-on-surface hover:bg-surface p-2 rounded-full shadow transition-colors flex items-center justify-center" title="Unpublish">
-              <span className="material-symbols-outlined text-[18px]">visibility_off</span>
-            </button>
-            <button onClick={(e) => handleCopyLink(e, post)} className="bg-surface/80 backdrop-blur text-on-surface hover:bg-surface p-2 rounded-full shadow transition-colors flex items-center justify-center" title="Copy Link">
-              <span className="material-symbols-outlined text-[18px]">link</span>
-            </button>
-            <button onClick={(e) => handleDelete(e, post)} className="bg-error/10 text-error hover:bg-error/20 p-2 rounded-full shadow transition-colors flex items-center justify-center" title="Delete">
-              <span className="material-symbols-outlined text-[18px]">delete</span>
-            </button>
+            <ActionButton onClick={() => navigate(`/edit/${post.id}`)} icon="edit" tooltip="Edit" />
+            <ActionButton onClick={(e) => handleStatusChange(e, post, 'DRAFT')} icon="visibility_off" tooltip="Unpublish" />
+            <ActionButton onClick={(e) => handleCopyLink(e, post)} icon="link" tooltip="Copy Link" />
+            <ActionButton onClick={(e) => handleDelete(e, post)} icon="delete" tooltip="Delete" colorClass="bg-error-container/50 text-error hover:bg-error-container" />
           </>
         ) : (
           <>
-            <span className="bg-surface-variant text-on-surface-variant font-label-caps text-xs px-3 py-1 rounded-full flex items-center shadow mr-2">DRAFT</span>
-            <button onClick={() => navigate(`/edit/${post.id}`)} className="bg-surface/80 backdrop-blur text-on-surface hover:bg-surface p-2 rounded-full shadow transition-colors flex items-center justify-center" title="Edit">
-              <span className="material-symbols-outlined text-[18px]">edit</span>
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); navigate(`/post/${post.id}`); }} className="bg-surface/80 backdrop-blur text-on-surface hover:bg-surface p-2 rounded-full shadow transition-colors flex items-center justify-center" title="Preview">
-              <span className="material-symbols-outlined text-[18px]">visibility</span>
-            </button>
-            <button onClick={(e) => handleStatusChange(e, post, 'PUBLISHED')} className="bg-primary/10 text-primary hover:bg-primary/20 p-2 rounded-full shadow transition-colors flex items-center justify-center" title="Publish">
-              <span className="material-symbols-outlined text-[18px]">publish</span>
-            </button>
+            <span className="bg-surface-variant text-on-surface-variant font-label-caps text-xs px-3 py-1 rounded-full flex items-center shadow-sm mr-auto">DRAFT</span>
+            <ActionButton onClick={() => navigate(`/edit/${post.id}`)} icon="edit" tooltip="Edit" />
+            <ActionButton onClick={(e) => { e.stopPropagation(); navigate(`/post/${post.id}`); }} icon="visibility" tooltip="Preview" />
+            <ActionButton onClick={(e) => handleStatusChange(e, post, 'PUBLISHED')} icon="publish" tooltip="Publish" colorClass="bg-primary-container/50 text-primary hover:bg-primary-container" />
           </>
         )}
       </div>
@@ -317,6 +332,47 @@ export default function PostList({ authorId }) {
           <div className="flex flex-col items-center text-outline">
             <span className="material-symbols-outlined text-[24px] mb-2">done_all</span>
             <span className="text-on-surface-variant font-label-caps text-xs">You've reached the end!</span>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Popup */}
+      {confirmAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-background/20 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setConfirmAction(null)}>
+          <div className="bg-surface rounded-[28px] shadow-2xl w-full max-w-[400px] overflow-hidden border border-outline-variant/30 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-8 flex flex-col items-center text-center">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 shadow-sm ${confirmAction.type === 'DELETE' ? 'bg-error-container text-on-error-container' : 'bg-primary-container text-on-primary-container'}`}>
+                <span className="material-symbols-outlined text-[32px]">
+                  {confirmAction.type === 'DELETE' ? 'delete_forever' : 'visibility_off'}
+                </span>
+              </div>
+              <h3 className="text-headline-sm font-headline-sm text-on-surface mb-4">
+                {confirmAction.type === 'DELETE' ? 'Delete Post?' : 'Unpublish Post?'}
+              </h3>
+              <p className="text-body-md font-body-md text-on-surface-variant mb-8 px-2">
+                {confirmAction.type === 'DELETE' 
+                  ? 'Are you sure you want to permanently delete this post? This action cannot be undone.'
+                  : 'Are you sure you want to unpublish this post? It will be moved to drafts and hidden from public view.'}
+              </p>
+              <div className="flex justify-center gap-4 w-full">
+                <button 
+                  onClick={() => setConfirmAction(null)}
+                  className="flex-1 py-3 px-4 font-label-large text-on-surface rounded-xl border border-outline-variant hover:bg-surface-variant transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleConfirmAction}
+                  className={`flex-1 py-3 px-4 font-label-large rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 ${
+                    confirmAction.type === 'DELETE' 
+                      ? 'bg-error text-on-error hover:opacity-90 shadow-error/20' 
+                      : 'bg-primary text-on-primary hover:opacity-90 shadow-primary/20'
+                  }`}
+                >
+                  {confirmAction.type === 'DELETE' ? 'Delete' : 'Unpublish'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
