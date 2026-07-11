@@ -4,7 +4,7 @@ import App from './App.jsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import { ToastProvider } from './components/Toast'
-import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client'
+import { ApolloClient, InMemoryCache, HttpLink, from, ApolloLink } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { ApolloProvider } from '@apollo/client/react'
@@ -28,11 +28,15 @@ const errorLink = onError(({ graphQLErrors }) => {
   }
 });
 
+const stripClientAwarenessLink = new ApolloLink((operation, forward) => {
+  if (operation.extensions && operation.extensions.clientLibrary) {
+    delete operation.extensions.clientLibrary;
+  }
+  return forward(operation);
+});
+
 const client = new ApolloClient({
-  enhancedClientAwareness: {
-    transport: false
-  },
-  link: from([errorLink, httpLink]),
+  link: from([stripClientAwarenessLink, errorLink, httpLink]),
   cache: new InMemoryCache(),
 })
 
