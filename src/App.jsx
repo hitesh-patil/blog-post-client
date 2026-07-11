@@ -1,6 +1,7 @@
 import React, { useState, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Header from './components/Header';
+import { useAuth } from './context/AuthContext';
 
 // Lazy loaded route components
 const PostList = React.lazy(() => import('./components/PostList'));
@@ -11,8 +12,12 @@ const Profile = React.lazy(() => import('./components/Profile'));
 
 // A wrapper for protected routes
 function ProtectedRoute({ children }) {
-  const isAuthenticated = localStorage.getItem('isAuthenticated');
+  const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) {
+    return <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+  }
 
   if (!isAuthenticated) {
     // Save the intended route so they can redirect back after login
@@ -24,11 +29,18 @@ function ProtectedRoute({ children }) {
 }
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('isAuthenticated'));
+  const { isAuthenticated, login, logout } = useAuth();
+  
+  // Backwards compatibility layer for components still expecting token string/props
+  const tokenStr = isAuthenticated ? 'true' : null;
+  const setToken = (val) => {
+    if (val) login();
+    else logout();
+  };
 
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
-      <Header token={token} setToken={setToken} />
+      <Header token={tokenStr} setToken={setToken} />
       <main className="flex-grow max-w-container-max mx-auto w-full px-margin-mobile md:px-gutter py-stack-lg">
         <Suspense fallback={<div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
           <Routes>

@@ -8,6 +8,7 @@ import { ApolloClient, InMemoryCache, HttpLink, from, ApolloLink } from '@apollo
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { ApolloProvider } from '@apollo/client/react'
+import { AuthProvider } from './context/AuthContext'
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/graphql';
 const httpLink = new HttpLink({ 
@@ -19,10 +20,7 @@ const errorLink = onError(({ graphQLErrors }) => {
   if (graphQLErrors) {
     for (let err of graphQLErrors) {
       if (err.extensions?.code === 'UNAUTHENTICATED') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('isAuthenticated');
-        // Force reload to redirect to login if protected route
-        window.location.href = '/login';
+        window.dispatchEvent(new Event('auth:unauthorized'));
       }
     }
   }
@@ -44,9 +42,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ApolloProvider client={client}>
       <BrowserRouter>
-        <ToastProvider>
-          <App />
-        </ToastProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
+        </AuthProvider>
       </BrowserRouter>
     </ApolloProvider>
   </React.StrictMode>,
